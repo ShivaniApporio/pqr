@@ -1,1 +1,214 @@
-kxkdkkc
+  implementation 'com.google.code.gson:gson:2.3'
+    implementation 'com.amitshekhar.android:android-networking:0.2.0'
+      <uses-permission android:name="android.permission.INTERNET" />
+    
+    //////////////////////////////////////////////////////////////////////////
+    public class ApiManger {
+    String url;
+    HashMap map, map1;
+    GsonBuilder gsonBuilder;
+    ProgressDialog pd;
+    Gson gson;
+    private static final String TAG = "APIExecution";
+    ResponceOnParsing responceOnParsing;
+
+    public ApiManger() {
+        gsonBuilder = new GsonBuilder();
+        gson = gsonBuilder.create();
+        map = new HashMap();
+        map1 = new HashMap();
+
+    }
+
+    public void set_interface_context_upload(String[] key, String[] value, HashMap image, ResponceOnParsing activity, String tag, String url) {
+        map1.clear();
+        responceOnParsing = activity;
+        for (int k = 0; k < key.length; k++) {
+            map1.put(key[k], value[k]);
+
+        }
+        if (image.size() == 0) {
+            execution_method(map1, tag, url);
+        } else {
+            if (map1.size() == 0) {
+                execution_method_get(tag, url, activity);
+            } else
+                execution_method_upload_new(map1, image, tag, url);
+        }
+    }
+
+    public void set_interface_context_get(ResponceOnParsing responceOnParsing, String tag, String url) {
+        this.responceOnParsing = responceOnParsing;
+        // execution_method_get(tag, url,);
+
+    }
+
+    public void execution_method(HashMap map1, final String tag, String url) {
+        Logger.e("bhaiu chsjdjs"+url+" " + map1.toString());
+
+        responceOnParsing.onAPIRunningState(responceOnParsing.STARTED, tag);
+        AndroidNetworking.post(url)
+                .addBodyParameter(map1)
+                .setTag(this)
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .setAnalyticsListener(new AnalyticsListener() {
+                    @Override
+                    public void onReceived(long timeTakenInMillis, long bytesSent, long bytesReceived, boolean isFromCache) {
+
+                        Logger.e(TAG, " timeTakenInMillis : " + timeTakenInMillis);
+                        Logger.e(TAG, " bytesSent : " + bytesSent);
+                        Logger.e(TAG, " bytesReceived : " + bytesReceived);
+                        Logger.e(TAG, " isFromCache : " + isFromCache);
+                    }
+                })
+                .getAsString(new StringRequestListener() {
+                    @Override
+                    public void onResponse(String response) {
+                        Logger.e("response " + tag + response);
+                        responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                        responceOnParsing.onResponceState(gson, "" + response, tag);
+                    }
+
+                    @Override
+                    public void onError(ANError anError) {
+                        responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                        responceOnParsing.onFetchFailed(anError, tag);
+
+                        Logger.e("errror" + "" + anError.getErrorBody());
+                        Logger.e("errror" + "" + anError.getErrorDetail());
+                        Logger.e("errror" + "" + anError.getMessage());
+                        Logger.e("error" + "" + anError.getStackTrace());
+                        Logger.e("error" + "" + anError.getCause());
+                    }
+                });
+//                .getAsJSONObject(new JSONObjectRequestListener() {
+//                    @Override
+//                    public void onResponse(final JSONObject jsonObject) {
+//                        ApporioLog.logE("resonse", "" + jsonObject);
+//                        responceOnParsing.onAPIRunningState(responceOnParsing.STOP);
+//                        responceOnParsing.onResponceState(gson, "" + jsonObject, tag);
+//                    }
+//                    @Override
+//                    public void onError(ANError anError) {
+//                        responceOnParsing.onFetchFailed(anError,tag);
+//                        ApporioLog.logE("errror", "" + anError.getErrorBody());
+//                        ApporioLog.logE("errror", "" + anError.getErrorDetail());
+//                        ApporioLog.logE("errror", "" + anError.getMessage());
+//                        ApporioLog.logE("error", "" + anError.getStackTrace());
+//                        ApporioLog.logE("error", "" + anError.getCause());
+//                    }
+//                });
+    }
+
+    public void execution_method_upload_new(HashMap map1, HashMap map2, final String tag, String url) {
+        responceOnParsing.onAPIRunningState(responceOnParsing.STARTED, tag);
+
+        Logger.e("bhaiu chsjdjs"+url+" " + map1.toString());
+        Logger.e("bhaiu chsjdjs" + map2.toString());
+        AndroidNetworking.upload(url)
+                .addMultipartParameter(map1)
+                .addMultipartFile(map2)
+                .setTag(this)
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .setAnalyticsListener(new AnalyticsListener() {
+                    @Override
+                    public void onReceived(long timeTakenInMillis, long bytesSent, long bytesReceived, boolean isFromCache) {
+
+                        Logger.e(TAG, " timeTakenInMillis : " + timeTakenInMillis);
+                        Logger.e(TAG, " bytesSent : " + bytesSent);
+                        Logger.e(TAG, " bytesReceived : " + bytesReceived);
+                        Logger.e(TAG, " isFromCache : " + isFromCache);
+                    }
+                })
+                .setUploadProgressListener(new UploadProgressListener() {
+                    @Override
+                    public void onProgress(long bytesUploaded, long totalBytes) {
+                        // do anything with progress
+
+                        Logger.e("cc" + "" + bytesUploaded);
+                        Logger.e("d," + "" + totalBytes);
+                        responceOnParsing.onProgressUpload(bytesUploaded, totalBytes);
+                    }
+                })
+                .getAsString(new StringRequestListener() {
+
+                    @Override
+                    public void onResponse(String response) {
+
+                        Logger.e("resonse" + response);
+                        responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                        responceOnParsing.onResponceState(gson, "" + response, tag);
+                    }
+
+                    @Override
+                    public void onError(ANError anError) {
+                        responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                        responceOnParsing.onFetchFailed(anError, tag);
+
+                        Logger.e("errror" + "" + anError.getErrorBody());
+                        Logger.e("errror" + "" + anError.getErrorDetail());
+                        Logger.e("errror" + "" + anError.getMessage());
+                        Logger.e("error" + "" + anError.getStackTrace());
+                        Logger.e("error" + "" + anError.getCause());
+                    }
+                });
+    }
+
+
+    public void execution_method_get(final String tag, String url, ResponceOnParsing activity) {
+        Logger.e("chala" + url);
+        responceOnParsing = activity;
+        responceOnParsing.onAPIRunningState(responceOnParsing.STARTED, tag);
+        AndroidNetworking.post(url)
+                .setTag(this).setPriority(Priority.MEDIUM)
+                .build()
+                .setAnalyticsListener(new AnalyticsListener() {
+                    @Override
+                    public void onReceived(long timeTakenInMillis, long bytesSent, long bytesReceived, boolean isFromCache) {
+
+                        Logger.e(TAG, " timeTakenInMillis : " + timeTakenInMillis);
+                        Logger.e(TAG, " bytesSent : " + bytesSent);
+                        Logger.e(TAG, " bytesReceived : " + bytesReceived);
+                        Logger.e(TAG, " isFromCache : " + isFromCache);
+                    }
+                }).getAsString(new StringRequestListener() {
+
+            @Override
+            public void onResponse(String response) {
+
+                Logger.e("resonse   " + "" + response);
+                responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                responceOnParsing.onResponceState(gson, "" + response, tag);
+            }
+
+            @Override
+            public void onError(ANError anError) {
+                responceOnParsing.onAPIRunningState(responceOnParsing.STOP, tag);
+                responceOnParsing.onFetchFailed(anError, tag);
+
+                Logger.e("errror" + "" + anError.getErrorBody());
+                Logger.e("errror" + "" + anError.getErrorDetail());
+                Logger.e("errror" + "" + anError.getMessage());
+                Logger.e("error" + "" + anError.getStackTrace());
+                Logger.e("error" + "" + anError.getCause());
+            }
+        });
+    }
+
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+
+public interface ResponceOnParsing {
+    public int STARTED = 0;
+    public int STOP = 1;
+    void onAPIRunningState(int a, String apiName);
+    void onFetchFailed(ANError error, String apiName);
+    void onResponceState(Gson gson, String script, String apiname);
+    void onProgressUpload(Long uploadbyte, Long total_byte);
+
+}
